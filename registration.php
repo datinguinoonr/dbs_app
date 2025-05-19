@@ -7,11 +7,12 @@
     if (isset($_POST['register'])){
      
       $username = $_POST['username'];
+      $email = $_POST['email'];
       $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
       $firstname = $_POST['first_name'];
       $lastname = $_POST['last_name'];
  
-      $userID = $con->signupUser($username, $password, $firstname, $lastname);
+      $userID = $con->signupUser($firstname, $lastname, $username, $email, $password);
      
       if ($userID) {
         $sweetAlertConfig = "
@@ -70,6 +71,11 @@
         <div class="invalid-feedback">Username is required.</div>
       </div>
       <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" name="email" id="email" class="form-control" placeholder="Enter your email" required>
+        <div class="invalid-feedback">Email is required.</div>
+      </div>
+      <div class="mb-3">
         <label for="password" class="form-label">Password</label>
         <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required>
         <div class="invalid-feedback">Password must be at least 6 characters long, include an uppercase letter, a number, and a special character.</div>      
@@ -111,9 +117,10 @@
         usernameField.classList.remove('is-valid');
         usernameField.classList.add('is-invalid');
         usernameField.nextElementSibling.textContent = 'Username is required.';
-        registerButton.disabled = true;
+        registerButton.disabled = true; //disabled the button
         return;
       }
+
  
       // Send AJAX request to check username availability
       fetch('ajax/check_username.php', {
@@ -129,16 +136,59 @@
             usernameField.classList.remove('is-valid');
             usernameField.classList.add('is-invalid');
             usernameField.nextElementSibling.textContent = 'Username is already taken.';
-            registerButton.disabled = true;
+            registerButton.disabled = true; //disabled the button
           } else {
             usernameField.classList.remove('is-invalid');
             usernameField.classList.add('is-valid');
             usernameField.nextElementSibling.textContent = '';
-            registerButton.disabled = false;
+            registerButton.disabled = false; //disabled the button
           }
         })
         .catch((error) => {
           console.error('Error:', error);
+          registerButton.disabled = true; //disabled the button
+        });
+    });
+  };
+
+   const checkEmailAvailability = (emailField) => {
+    emailField.addEventListener('input', () => {
+      const email = emailField.value.trim();
+ 
+      if (email === '') {
+        emailField.classList.remove('is-valid');
+        emailField.classList.add('is-invalid');
+        emailField.nextElementSibling.textContent = 'Email is required.';
+    
+        return;
+      }
+
+ 
+      // Send AJAX request to check username availability
+      fetch('ajax/check_email.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `email=${encodeURIComponent(email)}`,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.exists) {
+            emailField.classList.remove('is-valid');
+            emailField.classList.add('is-invalid');
+            emailField.nextElementSibling.textContent = 'Email is already taken.';
+            
+          } else {
+            emailField.classList.remove('is-invalid');
+            emailField.classList.add('is-valid');
+            emailField.nextElementSibling.textContent = '';
+          
+          }
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          
         });
     });
   };
@@ -147,6 +197,7 @@
   const firstName = document.getElementById('first_name');
   const lastName = document.getElementById('last_name');
   const username = document.getElementById('username');
+  const email = document.getElementById('email');
   const password = document.getElementById('password');
  
   // Attach real-time validation to each field
@@ -154,15 +205,16 @@
   validateField(lastName, isNotEmpty);
   validateField(password, isPasswordValid);
   checkUsernameAvailability(username);
+  checkEmailAvailability(email);
  
   // Form submission validation
   document.getElementById('registrationForm').addEventListener('submit', function (e) {
-  //  e.preventDefault(); // Prevent form submission for validation
- 
+   // e.preventDefault(); // Prevent form submission for validation
+   
     let isValid = true;
  
     // Validate all fields on submit
-    [firstName, lastName, username, password].forEach((field) => {
+    [firstName, lastName, username, email, password].forEach((field) => {
       if (!field.classList.contains('is-valid')) {
         field.classList.add('is-invalid');
         isValid = false;
@@ -179,4 +231,5 @@
  
 </body>
 </html>
+ 
  
